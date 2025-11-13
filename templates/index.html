@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepfake Detection</title>
+    <style>
+        :root {
+            --bg1: #0f172a;
+            --bg2: #1e293b;
+            --brand: #22d3ee;
+            --accent: #8b5cf6;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --error: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            margin: 0;
+            display: grid;
+            place-items: center;
+            background: radial-gradient(1200px 600px at 20% 20%, var(--bg2), var(--bg1));
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Helvetica Neue", sans-serif;
+        }
+        .shell {
+            width: 100%;
+            max-width: 760px;
+            padding: 24px;
+        }
+        .card {
+            border-radius: 16px;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            overflow: hidden;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+        .logo {
+            width: 36px; height: 36px;
+            display: grid; place-items: center;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--brand), var(--accent));
+        }
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .content { padding: 24px; }
+        .subtitle { margin: 0 0 12px; color: var(--muted); }
+        .drop {
+            border: 2px dashed rgba(255,255,255,0.25);
+            border-radius: 14px;
+            padding: 28px;
+            display: grid;
+            place-items: center;
+            gap: 10px;
+            color: var(--muted);
+            transition: border-color 180ms ease, background 180ms ease;
+        }
+        .drop.drag {
+            border-color: var(--brand);
+            background: rgba(34,211,238,0.08);
+            color: var(--text);
+        }
+        .hidden-input { display: none; }
+        .file-name { margin-top: 6px; color: var(--text); font-weight: 600; }
+        .actions { display: flex; gap: 12px; margin-top: 18px; }
+        .btn {
+            appearance: none;
+            border: 0;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--brand), var(--accent));
+            color: #0b1220;
+            box-shadow: 0 8px 20px rgba(139,92,246,0.35);
+        }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.14);
+        }
+        .tips { margin-top: 16px; font-size: 14px; color: var(--muted); }
+        .message { margin-top: 12px; color: var(--error); font-weight: 600; }
+        .footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+        .brand { color: var(--brand); }
+        .accent { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <div class="card">
+            <div class="header">
+                <div class="logo">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" fill="white" opacity="0.9"/>
+                        <circle cx="12" cy="12" r="3.5" fill="#0b1220"/>
+                    </svg>
+                </div>
+                <div class="title">Deepfake Audio Detection</div>
+            </div>
+            <div class="content">
+                <p class="subtitle">Upload a WAV file to analyze authenticity.</p>
+                <form id="uploadForm" action="/" method="post" enctype="multipart/form-data">
+                    <input id="fileInput" class="hidden-input" type="file" name="audio_file" accept=".wav">
+                    <div id="dropZone" class="drop">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 19h14a2 2 0 002-2V9a2 2 0 00-2-2h-4l-2-2H9L7 7H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M12 10v6" stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M9 13h6" stroke="currentColor" stroke-width="1.6"/>
+                        </svg>
+                        <div>Select or drop a .wav file</div>
+                        <div id="fileName" class="file-name"></div>
+                    </div>
+                    <div class="actions">
+                        <button id="selectBtn" type="button" class="btn btn-secondary">Choose File</button>
+                        <button id="submitBtn" type="submit" class="btn btn-primary" disabled>Analyze</button>
+                    </div>
+                    {% if message %}
+                    <div class="message">{{ message }}</div>
+                    {% endif %}
+                    <div class="tips">Only .wav files are supported. Larger files may take longer to process.</div>
+                </form>
+            </div>
+            <div class="footer">
+                <div><span class="brand">MFCC</span> powered SVM</div>
+                <div><span class="accent">Secure</span> upload supported</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const fileName = document.getElementById('fileName');
+        const selectBtn = document.getElementById('selectBtn');
+        const submitBtn = document.getElementById('submitBtn');
+
+        function updateUI(file) {
+            if (!file) return;
+            fileName.textContent = file.name;
+            submitBtn.disabled = !(file && file.name.toLowerCase().endsWith('.wav'));
+        }
+
+        selectBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => updateUI(fileInput.files[0]));
+
+        ;['dragenter','dragover'].forEach(evt => {
+            dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag'); });
+        });
+        ;['dragleave','drop'].forEach(evt => {
+            dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag'); });
+        });
+        dropZone.addEventListener('drop', e => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files[0]) {
+                fileInput.files = dt.files;
+                updateUI(dt.files[0]);
+            }
+        });
+        dropZone.addEventListener('click', () => fileInput.click());
+    </script>
+</body>
+</html>
